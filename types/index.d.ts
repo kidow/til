@@ -3,4 +3,5 @@ interface Learns {
   content: string
   category: string
   created_at: string
+  isUpdateMode?: boolean
 }

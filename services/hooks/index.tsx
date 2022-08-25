@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { RefObject, useCallback, useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 
 export function useObjectState<T>(
@@ -52,4 +52,20 @@ export function useObjectState<T>(
   }, [state])
 
   return [state, onChange, onEventChange, resetState]
+}
+
+export function useIntersectionObserver<T extends HTMLElement>(): [
+  RefObject<T>,
+  boolean
+] {
+  const ref = useRef<T>(null)
+  const [entry, setEntry] = useState<IntersectionObserverEntry>()
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => setEntry(entry))
+    if (ref.current) observer.observe(ref.current)
+    return () => observer.disconnect()
+  }, [ref.current])
+
+  return [ref, entry?.isIntersecting || false]
 }
