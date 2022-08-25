@@ -78,7 +78,7 @@ const HomePage: NextPage = () => {
   const onLogin = async () => {
     try {
       await supabase.auth.signIn(
-        { email: 'wcgo2ling@gmail.com' },
+        { email: process.env.NEXT_PUBLIC_EMAIL },
         {
           redirectTo:
             process.env.NODE_ENV === 'development'
