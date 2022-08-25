@@ -1,26 +1,30 @@
-html,
-body {
-  padding: 0;
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
-    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 * {
-  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo',
+    Pretendard, Roboto, 'Noto Sans KR', 'Segoe UI', 'Malgun Gothic', sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
+@layer base {
+  html,
   body {
-    color: white;
-    background: black;
+    @apply bg-zinc-900 text-zinc-50;
+  }
+  input,
+  textarea,
+  button {
+    @apply focus:outline-none;
+  }
+  textarea {
+    @apply resize-none;
+  }
+  input,
+  textarea {
+    @apply bg-transparent placeholder:italic;
+  }
+  button {
+    @apply disabled:cursor-not-allowed;
   }
 }
