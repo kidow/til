@@ -21,11 +21,12 @@ interface State {
   category: string
   page: number
   isBackTopVisible: boolean
+  isLoggedIn: boolean
 }
 
 const HomePage: NextPage = () => {
   const [
-    { list, content, isLoading, category, page, isBackTopVisible },
+    { list, content, isLoading, category, page, isBackTopVisible, isLoggedIn },
     setState,
     onChange
   ] = useObjectState<State>({
@@ -34,7 +35,8 @@ const HomePage: NextPage = () => {
     isLoading: false,
     category: '',
     page: 0,
-    isBackTopVisible: false
+    isBackTopVisible: false,
+    isLoggedIn: false
   })
   const [ref, isIntersecting] = useIntersectionObserver<HTMLDivElement>()
 
@@ -73,12 +75,37 @@ const HomePage: NextPage = () => {
     }
   }
 
+  const onLogin = async () => {
+    try {
+      await supabase.auth.signIn(
+        { email: 'wcgo2ling@gmail.com' },
+        {
+          redirectTo:
+            process.env.NODE_ENV === 'development'
+              ? 'http://localhost:3004'
+              : 'https://til.kidow.me'
+        }
+      )
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const onLogout = async () => {
+    try {
+      await supabase.auth.signOut()
+      setState({ isLoggedIn: false })
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   const onScroll = throttle(() => {
     setState({ isBackTopVisible: document.documentElement.scrollTop > 400 })
   }, 100)
 
   const onSubmit = async () => {
-    if (!content) return
+    if (!content || !isLoggedIn) return
     setState({ isLoading: true })
     try {
       await supabase.from<Learns>('learns').insert({ content, category })
@@ -91,7 +118,22 @@ const HomePage: NextPage = () => {
     }
   }
 
+  const onCategoryChange = async (
+    id: number,
+    category: string,
+    index: number
+  ) => {
+    try {
+      await supabase.from<Learns>('learns').update({ category }).eq('id', id)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   useEffect(() => {
+    supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') setState({ isLoggedIn: true })
+    })
     window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
@@ -105,10 +147,19 @@ const HomePage: NextPage = () => {
         <title>Today I Learned - Kidow</title>
       </Head>
 
-      <header className="sticky top-0 mx-auto flex h-12 max-w-lg items-center justify-end px-5 md:px-0">
+      <header className="sticky top-0 mx-auto flex h-12 max-w-lg items-center justify-end gap-2 px-5 md:px-0">
         <button className="z-10 rounded-full bg-zinc-900 p-2 hover:bg-zinc-700 hover:text-zinc-100 active:bg-zinc-800">
           <CalendarDaysIcon className="h-5 w-5" />
         </button>
+        {isLoggedIn ? (
+          <button onClick={onLogout} className="text-sm">
+            Logout
+          </button>
+        ) : (
+          <button className="text-sm" onClick={onLogin}>
+            Login
+          </button>
+        )}
       </header>
 
       <div className="relative mx-auto mb-8 max-w-lg px-5 text-sm md:px-0">
@@ -157,17 +208,48 @@ const HomePage: NextPage = () => {
             <div className="mb-2 text-2xl">{createdAt}</div>
             <ul className="space-y-2">
               {data.map((item, key) => (
-                <li
-                  key={key}
-                  className="text-zinc-400 duration-100 hover:bg-zinc-800"
-                >
+                <li key={key} className="flex items-start gap-2">
+                  <select
+                    value={item.category}
+                    disabled={!isLoggedIn}
+                    className="bg-transparent"
+                    onChange={async (e) => {
+                      try {
+                        await supabase
+                          .from<Learns>('learns')
+                          .update({ category: e.target.value })
+                          .eq('id', item.id)
+                        setState({
+                          list: {
+                            ...list,
+                            [createdAt]: [
+                              ...list[createdAt].slice(0, key),
+                              { ...item, category: e.target.value },
+                              ...list[createdAt].slice(key + 1)
+                            ]
+                          }
+                        })
+                      } catch (err) {
+                        console.error(err)
+                      }
+                    }}
+                  >
+                    <option value="개발">개발</option>
+                    <option value="디자인">디자인</option>
+                    <option value="마케팅">마케팅</option>
+                    <option value="창업">창업</option>
+                    <option value="법">법</option>
+                    <option value="경영">경영</option>
+                    <option value="기타">기타</option>
+                  </select>
                   <TextareaAutosize
                     spellCheck={false}
                     readOnly={!item.isUpdateMode}
                     className={classnames(
-                      'w-full resize-none',
+                      'w-full flex-1 resize-none text-zinc-400 duration-100 hover:bg-zinc-800',
                       item.isUpdateMode ? 'cursor-text' : 'cursor-pointer'
                     )}
+                    disabled={!isLoggedIn}
                     onClick={() =>
                       setState({
                         list: {
