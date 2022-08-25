@@ -14,7 +14,8 @@
   }
   input,
   textarea,
-  button {
+  button,
+  select {
     @apply focus:outline-none;
   }
   textarea {
